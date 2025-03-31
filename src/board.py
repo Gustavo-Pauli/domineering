@@ -11,115 +11,137 @@ class Board:
         self.hover_callback = hover_callback
         self.leave_callback = leave_callback
         self.cell_size = settings.cell_size
-        self.preview_cells = []  # Track cells currently being previewed
-        self.cells = []
-        
-        # Use a game instance to manage logic
         self.game = Game(board_size=settings.board_size)
-        
-        self.create_board()
-    
-    def create_board(self):
-        """Create or recreate the game board display"""
-        # Clear existing board
-        for widget in self.parent_frame.winfo_children():
-            widget.destroy()
-        
-        board_size = self.settings.board_size
-        self.cells = []
-        
-        # Create cells
-        for row in range(board_size):
-            row_cells = []
-            for col in range(board_size):
-                # Determine the cell's background color (checkerboard pattern)
-                bg_color = "white" if (row + col) % 2 == 0 else "#f0f0f0"
-                
-                # Create a Cell object for this position
-                cell = Cell(
-                    self,  # Reference to this Board object
-                    row, 
-                    col, 
-                    self.parent_frame, 
-                    self.cell_size, 
-                    bg_color
-                )
-                
-                row_cells.append(cell)
-            self.cells.append(row_cells)
-        
-        # Initialize all cells
+
+        # Instead of multiple canvases, use one canvas for the whole board
+        self.canvas = tk.Canvas(
+            parent_frame,
+            width=self.game.board_size * self.cell_size,
+            height=self.game.board_size * self.cell_size,
+            bg="white"
+        )
+        self.canvas.pack()
+
+        # Store Cell objects in a 2D list
+        self.cells = [
+            [Cell(row, col) for col in range(self.game.board_size)]
+            for row in range(self.game.board_size)
+        ]
+
+        # Track preview rectangle ID (if any)
+        self.preview_id = None
+
+        self._bind_events()
         self.refresh_board()
-    
+
+    def _bind_events(self):
+        """Bind canvas events for clicks and mouse movement."""
+        self.canvas.bind("<Button-1>", self._handle_click)
+        self.canvas.bind("<Motion>", self._handle_motion)
+        self.canvas.bind("<Leave>", self._handle_leave)
+
+    def _canvas_coords_to_cell(self, x, y):
+        """Convert canvas x,y coords to (row,col)."""
+        row = int(y // self.cell_size)
+        col = int(x // self.cell_size)
+        return (row, col)
+
+    def _handle_click(self, event):
+        row, col = self._canvas_coords_to_cell(event.x, event.y)
+        if self.click_callback:
+            self.click_callback(row, col)
+
+    def _handle_motion(self, event):
+        row, col = self._canvas_coords_to_cell(event.x, event.y)
+        if 0 <= row < self.game.board_size and 0 <= col < self.game.board_size:
+            if self.hover_callback:
+                self.hover_callback(row, col)
+
+    def _handle_leave(self, _event):
+        if self.leave_callback:
+            # We pass -1, -1 or similar so the callback knows we're off the board
+            self.leave_callback(-1, -1)
+
     def refresh_board(self):
-        """Refresh all cells based on game state."""
+        """Redraw the entire board with background squares and dominos."""
+        self.canvas.delete("all")
         board_size = self.game.board_size
+
+        # Draw checkerboard squares
         for row in range(board_size):
             for col in range(board_size):
-                cell = self.cells[row][col]
+                x1 = col * self.cell_size
+                y1 = row * self.cell_size
+                x2 = x1 + self.cell_size
+                y2 = y1 + self.cell_size
+                color = "white" if (row + col) % 2 == 0 else "#f0f0f0"
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, width=1, outline=self.settings.grid_color)
+
+        # Draw placed dominos as single rectangles
+        for row in range(board_size):
+            for col in range(board_size):
                 cell_state = self.game.get_cell_state(row, col)
-                # Redraw the cell based on game logic
                 if cell_state == self.game.VERTICAL:
-                    cell.set_state(Cell.VERTICAL)
+                    # Draw only if it's the top part of vertical domino
+                    # to avoid drawing twice
+                    if row + 1 < board_size and self.game.get_cell_state(row + 1, col) == self.game.VERTICAL:
+                        self._draw_domino(row, col, vertical=True)
                 elif cell_state == self.game.HORIZONTAL:
-                    cell.set_state(Cell.HORIZONTAL)
-                else:
-                    cell.set_state(Cell.EMPTY)
-    
+                    # Draw only if it's the left part of horizontal domino
+                    if col + 1 < board_size and self.game.get_cell_state(row, col + 1) == self.game.HORIZONTAL:
+                        self._draw_domino(row, col, vertical=False)
+
+    def _draw_domino(self, row, col, vertical=True, preview=False):
+        """Draw a single rectangle spanning two cells."""
+        color = self.settings.vertical_player_color if vertical else self.settings.horizontal_player_color
+        x1 = col * self.cell_size
+        y1 = row * self.cell_size
+
+        if vertical:
+            x2 = x1 + self.cell_size
+            y2 = y1 + (2 * self.cell_size)  # covers two squares vertically
+        else:
+            x2 = x1 + (2 * self.cell_size)  # covers two squares horizontally
+            y2 = y1 + self.cell_size
+
+        tag = "preview" if preview else "domino"
+        stipple_val = "gray50" if preview else ""
+
+        self.canvas.create_rectangle(x1, y1, x2, y2,
+                                     fill=color, outline="black",
+                                     width=2, stipple=stipple_val,
+                                     tags=tag)
+
     def place_vertical_domino(self, row, col):
-        """Place a vertical domino, ignoring local logic and using the game."""
         self.game.current_orientation = self.game.VERTICAL
-        success = self.game.place_domino(row, col)
+        self.game.place_domino(row, col)
         self.refresh_board()
-        return success
-    
+
     def place_horizontal_domino(self, row, col):
-        """Place a horizontal domino, ignoring local logic and using the game."""
         self.game.current_orientation = self.game.HORIZONTAL
-        success = self.game.place_domino(row, col)
+        self.game.place_domino(row, col)
         self.refresh_board()
-        return success
-    
+
     def is_valid_move(self, row, col, is_vertical=True):
-        """Check validity via the game."""
         orientation = self.game.VERTICAL if is_vertical else self.game.HORIZONTAL
         return self.game.is_valid_move(row, col, orientation)
-    
+
     def preview_move(self, row, col, is_vertical=True):
-        """Show preview only if the game says the move is valid."""
-        # Clear any existing preview first
+        """Draw a single preview rectangle if valid."""
         self.clear_preview()
-        
         orientation = self.game.VERTICAL if is_vertical else self.game.HORIZONTAL
         if not self.game.is_valid_move(row, col, orientation):
             return
-        
-        # Store the cells being previewed
-        self.preview_cells = []
-        
-        if is_vertical:
-            # Vertical domino preview
-            if row < self.settings.board_size - 1:
-                self.cells[row][col].draw_preview(is_vertical=True)
-                self.cells[row + 1][col].draw_preview(is_vertical=True)
-                self.preview_cells = [(row, col), (row + 1, col)]
-        else:
-            # Horizontal domino preview
-            if col < self.settings.board_size - 1:
-                self.cells[row][col].draw_preview(is_vertical=False)
-                self.cells[row][col + 1].draw_preview(is_vertical=False)
-                self.preview_cells = [(row, col), (row, col + 1)]
-    
+        self._draw_domino(row, col, vertical=is_vertical, preview=True)
+        # We won't track a full ID list, just clear all "preview" on next call
+        self.preview_id = True
+
     def clear_preview(self):
-        """Remove any domino placement preview"""
-        for row, col in self.preview_cells:
-            if row < len(self.cells) and col < len(self.cells[row]):
-                self.cells[row][col].clear_preview()
-        
-        # Clear the list of previewed cells
-        self.preview_cells = []
-    
+        """Clear any preview rectangle."""
+        if self.preview_id:
+            self.canvas.delete("preview")
+            self.preview_id = None
+
     def reset(self):
-        """Reset the entire board/game to empty."""
         self.game.clear_board()
         self.refresh_board()

@@ -71,18 +71,17 @@ class PlayerInterface:
     """Handle cell click and place using the orientation in Board.game if needed."""
     print(f"Cell clicked: {row}, {col}")
     self.board.clear_preview()
-    # For example, use vertical or horizontal directly:
-    # This behavior is now internal to board.place_vertical_domino or place_horizontal_domino
-    # Toggle orientation for demonstration
+    # Domino placement now draws one piece automatically
     if self.board.game.current_orientation == self.board.game.VERTICAL:
         self.board.place_vertical_domino(row, col)
-        self.board.game.toggle_orientation()  # Example: switch after every placement
+        self.board.game.toggle_orientation()
     else:
         self.board.place_horizontal_domino(row, col)
         self.board.game.toggle_orientation()
     
   def _on_cell_hover_internal(self, row, col):
     """Preview potential move based on current orientation in self.board.game."""
+    # Board handles single-piece preview
     is_vertical = (self.board.game.current_orientation == self.board.game.VERTICAL)
     self.board.preview_move(row, col, is_vertical)
     
