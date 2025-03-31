@@ -1,0 +1,14 @@
+# python
+.venv
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*/__pycache__/
+
+# IDE
+.idea/
+.vscode/
+
+# local folder for saving tests, etc.
+local/
