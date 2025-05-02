@@ -1,17 +1,17 @@
 import tkinter as tk
 from src.cell import Cell
 from src.domineering_game import Game
+from src.settings import *
 
 class Board:
-    def __init__(self, parent_interface, parent_frame, settings, click_callback=None, hover_callback=None, leave_callback=None):
+    def __init__(self, parent_interface, parent_frame, click_callback=None, hover_callback=None, leave_callback=None):
         self.parent_interface = parent_interface
         self.parent_frame = parent_frame
-        self.settings = settings
         self.click_callback = click_callback
         self.hover_callback = hover_callback
         self.leave_callback = leave_callback
-        self.cell_size = settings.cell_size
-        self.game = Game(board_size=settings.board_size)
+        self.cell_size = CELL_SIZE
+        self.game = Game(board_size=BOARD_SIZE)
 
         # Instead of multiple canvases, use one canvas for the whole board
         self.canvas = tk.Canvas(
@@ -75,7 +75,7 @@ class Board:
                 x2 = x1 + self.cell_size
                 y2 = y1 + self.cell_size
                 color = "white" if (row + col) % 2 == 0 else "#f0f0f0"
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, width=1, outline=self.settings.grid_color)
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, width=1, outline=GRID_COLOR)
 
         # Draw placed dominos as single rectangles
         for row in range(board_size):
@@ -93,7 +93,7 @@ class Board:
 
     def _draw_domino(self, row, col, vertical=True, preview=False):
         """Draw a single rectangle spanning two cells."""
-        color = self.settings.vertical_player_color if vertical else self.settings.horizontal_player_color
+        color = VERTICAL_PLAYER_COLOR if vertical else HORIZONTAL_PLAYER_COLOR
         x1 = col * self.cell_size
         y1 = row * self.cell_size
 

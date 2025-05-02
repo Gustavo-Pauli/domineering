@@ -1,12 +1,11 @@
 import tkinter as tk
-from src.settings import Settings
 from src.board import Board
+from src.settings import *
 
 class PlayerInterface:
   """Main player interface class that coordinates between game logic and UI"""
 
   def __init__(self):
-    self.settings = Settings()
     self.main_window = tk.Tk()
 
     self.build_window()
@@ -15,7 +14,6 @@ class PlayerInterface:
     self.board = Board(
         parent_interface=self,
         parent_frame=self.board_frame, 
-        settings=self.settings,
         click_callback=self._on_cell_click_internal,
         hover_callback=self._on_cell_hover_internal,
         leave_callback=self._on_cell_leave_internal
@@ -29,7 +27,7 @@ class PlayerInterface:
     self.main_window.iconbitmap("assets/icon.ico")
     self.main_window.geometry("680x860")
     self.main_window.resizable(False, False)
-    self.main_window["bg"]="#2f4255" # todo: add to settings
+    self.main_window["bg"]=BG_COLOR
     
     # create the game frame board with a 8x8 grid
     self.board_frame = tk.Frame(
