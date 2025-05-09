@@ -2,7 +2,7 @@ import tkinter as tk
 from src.board import Board
 from src.settings import *
 
-class PlayerInterface:
+class DomInterface:
   """Main player interface class that coordinates between game logic and UI"""
 
   def __init__(self):
@@ -23,6 +23,8 @@ class PlayerInterface:
 
     
   def build_window(self):
+    """Build the main window and its components."""
+    # window settings
     self.main_window.title("Domineering")
     self.main_window.iconbitmap("assets/icon.ico")
     self.main_window.geometry("680x860")
