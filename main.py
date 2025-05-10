@@ -1,5 +1,4 @@
-from dom_interface import PlayerInterface
+from src.dom_interface import DomInterface
 
 if __name__ == "__main__":
-    from dom_interface import PlayerInterface
-    PlayerInterface()
+    DomInterface()
