@@ -1,14 +1,18 @@
 import tkinter as tk
+from tkinter import simpledialog, messagebox
 from src.board import Board
 from src.settings import *
+from dog.dog_interface import DogPlayerInterface
+from dog.dog_actor import DogActor
 
-class DomInterface:
+class DomInterface(DogPlayerInterface):
   """Main player interface class that coordinates between game logic and UI"""
 
   def __init__(self):
     self.main_window = tk.Tk()
 
     self.build_window()
+    self.build_menu()
 
     # Board handles logic via its internal Game instance
     self.board = Board(
@@ -18,6 +22,14 @@ class DomInterface:
         hover_callback=self._on_cell_hover_internal,
         leave_callback=self._on_cell_leave_internal
     )
+
+    # DOG
+    self.player_name = simpledialog.askstring(title="Nome do Jogador", prompt="Digite seu nome:")
+    self.dog_server_interface = DogActor()
+    message = self.dog_server_interface.initialize(self.player_name, self)
+    messagebox.showinfo(message=message)
+    print(message)
+    print(f"Player name: {self.player_name}")
 
     self.main_window.mainloop() # iniciar o loop de eventos
 
@@ -67,6 +79,20 @@ class DomInterface:
     self.opponent_moves_label = tk.Label(score_frame, text="0", font=("Arial", 16), fg="white", bg="#2f4255")
     self.opponent_moves_label.grid(row=1, column=1, padx=20, pady=5)
     
+  def build_menu(self):
+    """Create the menu bar with "Ações"."""
+    menubar = tk.Menu(self.main_window)
+    acoes_menu = tk.Menu(menubar, tearoff=0)
+    acoes_menu.add_command(label="Iniciar partida", command=self.start_match)
+    acoes_menu.add_command(label="Restaurar estado inicial", command=self.restore_initial_state)
+    menubar.add_cascade(label="Ações", menu=acoes_menu)
+    self.main_window.config(menu=menubar)
+    
+  def restore_initial_state(self):
+    """Restore the initial state of the game."""
+    print("Restaurando estado inicial...")
+    # Add restoration logic here
+    
   def _on_cell_click_internal(self, row, col):
     """Handle cell click and place using the orientation in Board.game if needed."""
     print(f"Cell clicked: {row}, {col}")
@@ -94,3 +120,18 @@ class DomInterface:
     if hasattr(self, 'board'):
         self.board.refresh_board()
 
+  def start_match(self):
+    """Start a new match"""
+    print("Starting match...")
+    start_status = self.dog_server_interface.start_match(2)
+    message = start_status.get_message()
+    messagebox.showinfo(message=message)
+
+  def start_game(self):
+    """Start a new game"""
+    print("Starting game...")
+    pass
+
+  def receive_start(self, start_status):
+    message = start_status.get_message()
+    messagebox.showinfo(message=message)
