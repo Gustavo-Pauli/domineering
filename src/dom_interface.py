@@ -126,12 +126,22 @@ class DomInterface(DogPlayerInterface):
     start_status = self.dog_server_interface.start_match(2)
     message = start_status.get_message()
     messagebox.showinfo(message=message)
+    self.start_game(start_status)
 
-  def start_game(self):
+  def start_game(self, start_status):
     """Start a new game"""
     print("Starting game...")
-    pass
+    self.board.initialize()
+    self.player_moves_label.config(text="0")
+    self.opponent_moves_label.config(text="0")
+
 
   def receive_start(self, start_status):
     message = start_status.get_message()
-    messagebox.showinfo(message=message)
+    code = start_status.get_code()
+    if code == 2:
+        self.start_game(start_status)
+        messagebox.showinfo(message=message)
+    else:
+        messagebox.showinfo(message=message)
+        print(f"Start status: {code}")
