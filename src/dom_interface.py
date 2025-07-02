@@ -136,6 +136,7 @@ class DomInterface(DogPlayerInterface):
     self.opponent_moves_label.config(text="0")
 
 
+  # DOG
   def receive_start(self, start_status):
     message = start_status.get_message()
     code = start_status.get_code()
@@ -145,3 +146,15 @@ class DomInterface(DogPlayerInterface):
     else:
         messagebox.showinfo(message=message)
         print(f"Start status: {code}")
+
+  # DOG
+  def receive_move(self, a_move):
+    print(f"Received move: {a_move}")
+    self.board.update_board(a_move)
+    self.opponent_moves_label.config(text=str(int(self.opponent_moves_label.cget("text")) + 1))
+    self.update_board()
+
+  # DOG
+  def receive_withdrawal_notification(self):
+    print("Received withdrawal notification")
+    self.board.handle_opponent_withdrawal()
