@@ -115,10 +115,11 @@ class DomInterface(DogPlayerInterface):
     """Clear the move preview."""
     self.board.clear_preview()
     
-  def update_board(self):
-    """Tell the board to refresh its display"""
-    if hasattr(self, 'board'):
-        self.board.refresh_board()
+  def refresh_ui(self):
+    """Refresh all views"""
+    self.board.refresh_board()
+    self.player_moves_label.config(text=str(self.board.game.get_player_moves()))
+    self.opponent_moves_label.config(text=str(self.board.game.get_opponent_moves()))
 
   def start_match(self):
     """Start a new match"""
@@ -135,7 +136,7 @@ class DomInterface(DogPlayerInterface):
     self.player_moves_label.config(text="0")
     self.opponent_moves_label.config(text="0")
 
-
+  # DOG
   def receive_start(self, start_status):
     message = start_status.get_message()
     code = start_status.get_code()
@@ -145,3 +146,15 @@ class DomInterface(DogPlayerInterface):
     else:
         messagebox.showinfo(message=message)
         print(f"Start status: {code}")
+
+  # DOG
+  def receive_move(self, a_move):
+    print(f"Received move: {a_move}")
+    self.board.update_board(a_move)
+    self.opponent_moves_label.config(text=str(int(self.opponent_moves_label.cget("text")) + 1))
+    self.update_board()
+
+  # DOG
+  def receive_withdrawal_notification(self):
+    print("Received withdrawal notification")
+    self.board.handle_opponent_withdrawal()
