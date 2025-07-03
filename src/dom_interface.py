@@ -120,36 +120,54 @@ class DomInterface(DogPlayerInterface):
 
     # START: Input Handlers
 
+    # def _on_cell_click(self, row: int, col: int):
+    #     if not self.is_my_turn or self.game.winner or self.my_player_orientation is None: return
+    #     orientation = self.my_player_orientation
+    #     if self.game.is_valid_move(row, col, orientation):
+    #         # --- THIS IS THE CRITICAL CHANGE ---
+    #         # Do not apply the move locally. Only send it to the server.
+    #         # The server will broadcast it back, and we will process it then.
+
+    #         # Create the move dictionary for the server.
+    #         move_dict = {'row': row, 'col': col, 'orientation': orientation}
+
+    #         # Add the required `match_status` key for the DOG framework.
+    #         # To do this, we "look ahead" to see if this move ends the game.
+    #         temp_game = copy.deepcopy(self.game)
+    #         temp_game.place_domino(row, col, orientation)
+    #         if temp_game.is_game_over(): # Check if the *next* player has any moves
+    #             move_dict["match_status"] = "finished"
+    #         else:
+    #             move_dict["match_status"] = "next"
+
+    #         self.dog_server_interface.send_move(move_dict)
+
+    #         # After sending, disable the turn locally to prevent sending multiple moves.
+    #         self.is_my_turn = False
+    #         self.turn_label.config(text="Opponent's Turn")
+
     def _on_cell_click(self, row: int, col: int):
-        if not self.is_my_turn or self.game.winner or self.my_player_orientation is None: return
-        orientation = self.my_player_orientation
-        if self.game.is_valid_move(row, col, orientation):
-            # --- THIS IS THE CRITICAL CHANGE ---
-            # Do not apply the move locally. Only send it to the server.
-            # The server will broadcast it back, and we will process it then.
+        pass
 
-            # Create the move dictionary for the server.
-            move_dict = {'row': row, 'col': col, 'orientation': orientation}
-
-            # Add the required `match_status` key for the DOG framework.
-            # To do this, we "look ahead" to see if this move ends the game.
-            temp_game = copy.deepcopy(self.game)
-            temp_game.place_domino(row, col, orientation)
-            if temp_game.is_game_over(): # Check if the *next* player has any moves
-                move_dict["match_status"] = "finished"
-            else:
-                move_dict["match_status"] = "next"
-
-            self.dog_server_interface.send_move(move_dict)
-
-            # After sending, disable the turn locally to prevent sending multiple moves.
-            self.is_my_turn = False
-            self.turn_label.config(text="Opponent's Turn")
+    # def _on_cell_hover(self, row: int, col: int):
+    #     if self.game.my_turn():
+    #         self.board.preview_move(row, col, self.game.local_player_orientation)
 
     def _on_cell_hover(self, row: int, col: int):
+        # Verify match status
+        if self.game.match_status != 3:
+            return
+        # Verify if it's the player's turn
+        if not self.game.my_turn():
+            return
+        # Verify if the cell is empty # ? maybe just call a method in the board for everything below?
+        # Verify the orientation
+            # HORIZONTAL: check if exists a right cell
+            # check if the right cell is empty
+            # VERTICAL: check if exists a bottom cell
+            # check if the bottom cell is empty
 
-        if self.game.my_turn():
-            self.board.preview_move(row, col, self.game.local_player_orientation)
+
 
     def _on_cell_leave(self):
         self.board.clear_preview()
