@@ -1,9 +1,9 @@
 """ The Board class handles the VIEW of the game board """
 
 import tkinter as tk
-from src.cell import Cell
-from src.domineering_game import Game
+# from src.domineering_game import Game  # Commented out to allow testing with mock objects
 from src.settings import *
+from src.game import Game
 
 class Board:
     def __init__(self, game_instance: Game, parent_frame: tk.Frame, click_callback=None, hover_callback=None, leave_callback=None):
@@ -25,11 +25,7 @@ class Board:
         self._bind_events()
         self.refresh_board() # initial draw
 
-    def _bind_events(self):
-        """Bind canvas events for clicks and mouse movement."""
-        self.canvas.bind("<Button-1>", self._handle_click)
-        self.canvas.bind("<Motion>", self._handle_motion)
-        self.canvas.bind("<Leave>", self._handle_leave)
+    # START: Board utils
 
     def _canvas_coords_to_cell(self, x: int, y: int) -> tuple[int, int] | None:
         """Convert canvas x,y coords to (row,col)."""
@@ -39,54 +35,99 @@ class Board:
             return (row, col)
         else:
             return None
+        
+    # END: Board utils
+
+    # START: Input handling
+        
+    def _bind_events(self):
+        """Bind canvas events for clicks and mouse movement."""
+        self.canvas.bind("<Button-1>", self._handle_click)
+        self.canvas.bind("<Motion>", self._handle_motion)
+        self.canvas.bind("<Leave>", self._handle_leave)
 
     def _handle_click(self, event: tk.Event) -> None:
         """ Calls the click callback for handling cell clicks. """
         coords = self._canvas_coords_to_cell(event.x, event.y)
-        if coords is not None:
+        if coords is not None and self.click_callback:
             row, col = coords
             self.click_callback(row, col)
 
     def _handle_motion(self, event: tk.Event) -> None:
         """ Calls the hover callback for handling mouse movement over cells. """
         coords = self._canvas_coords_to_cell(event.x, event.y)
-        if coords is not None:
+        if coords is not None and self.hover_callback:
             row, col = coords
             self.hover_callback(row, col)
 
-    def _handle_leave(self) -> None:
+    def _handle_leave(self, event: tk.Event) -> None:
         """ Calls the leave callback when mouse leaves the canvas area. """
-        self.leave_callback() # TODO: check if this is needed like this
+        if self.leave_callback:
+            self.leave_callback() # TODO: check if this is needed like this
 
-#     def refresh_board(self):
-#         """Redraw the entire board with background squares and dominos."""
-#         self.canvas.delete("all")
-#         board_size = self.game.board_size
+    # END: Input handling
 
-#         # Draw checkerboard squares
-#         for row in range(board_size):
-#             for col in range(board_size):
-#                 x1 = col * self.cell_size
-#                 y1 = row * self.cell_size
-#                 x2 = x1 + self.cell_size
-#                 y2 = y1 + self.cell_size
-#                 color = "white" if (row + col) % 2 == 0 else "#f0f0f0"
-#                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, width=1, outline=GRID_COLOR)
+    # START: Drawing methods
 
-#         # Draw placed dominos as single rectangles
-#         for row in range(board_size):
-#             for col in range(board_size):
-#                 cell_state = self.game.get_cell_state(row, col)
-#                 if cell_state == self.game.VERTICAL:
-#                     # Draw only if it's the top part of vertical domino
-#                     # to avoid drawing twice
-#                     if row + 1 < board_size and self.game.get_cell_state(row + 1, col) == self.game.VERTICAL:
-#                         self._draw_single_domino(row, col, vertical=True)
-#                 elif cell_state == self.game.HORIZONTAL:
-#                     # Draw only if it's the left part of horizontal domino
-#                     if col + 1 < board_size and self.game.get_cell_state(row, col + 1) == self.game.HORIZONTAL:
-#                         self._draw_single_domino(row, col, vertical=False)
+    def refresh_board(self) -> None:
+        """Redraws the entire board based on the current self.game state."""
+        self.canvas.delete("all")
+        self._draw_grid()
+        self._draw_dominos()
 
+    def _draw_grid(self) -> None:
+        for row in range(self.game.board_size):
+            for col in range(self.game.board_size):
+                x1 = col * self.cell_size
+                y1 = row * self.cell_size
+                x2 = x1 + self.cell_size
+                y2 = y1 + self.cell_size
+                color = "white" if (row + col) % 2 == 0 else "#f0f0f0"
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, width=1, outline=GRID_COLOR)
+
+    def _draw_dominos(self) -> None:
+        drawn_vertical = set()
+        drawn_horizontal = set()
+
+        for r in range(self.game.board_size):
+            for c in range(self.game.board_size):
+                state = self.game.get_cell_state(r, c)
+                if state == VERTICAL and (r, c) not in drawn_vertical:
+                    self._draw_single_domino(r, c, orientation=VERTICAL)
+                    drawn_vertical.add((r, c))
+                    drawn_vertical.add((r + 1, c))
+                elif state == HORIZONTAL and (r, c) not in drawn_horizontal:
+                    self._draw_single_domino(r, c, orientation=HORIZONTAL)
+                    drawn_horizontal.add((r, c))
+                    drawn_horizontal.add((r, c + 1))
+
+    def preview_move(self, row: int, col: int, orientation: str) -> None:
+        """Draws a semi-transparent preview of a move."""
+        # self.clear_preview()  # TODO: removed for now, verify if needed
+        if self.game.is_valid_move(row, col, orientation):
+            self._draw_single_domino(row, col, orientation, preview=True)
+
+    def clear_preview(self) -> None:
+        """Clears any active preview shapes from the canvas."""
+        self.canvas.delete("preview")
+
+    def _draw_single_domino(self, row: int, col: int, orientation: str, preview: bool = False) -> None:
+        color = VERTICAL_PLAYER_COLOR if orientation == VERTICAL else HORIZONTAL_PLAYER_COLOR
+        x1, y1 = col * self.cell_size, row * self.cell_size
+
+        if orientation == VERTICAL:
+            x2, y2 = x1 + self.cell_size, y1 + (2 * self.cell_size)
+        else:
+            x2, y2 = x1 + (2 * self.cell_size), y1 + self.cell_size
+
+        tags = "preview" if preview else "domino"
+        stipple = "gray50" if preview else ""
+
+        self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="black", width=2, stipple=stipple, tags=tags)
+
+    # END: Drawing methods
+
+    # ======== OLD =========
 
 #     def _draw_single_domino(self, row: int, col: int, is_vertical: bool, preview: bool = False) -> None:
 #         color = VERTICAL_PLAYER_COLOR if is_vertical else HORIZONTAL_PLAYER_COLOR
@@ -115,16 +156,6 @@ class Board:
 #     def is_valid_move(self, row, col, is_vertical=True):
 #         orientation = self.game.VERTICAL if is_vertical else self.game.HORIZONTAL
 #         return self.game.is_valid_move(row, col, orientation)
-
-#     def preview_move(self, row, col, is_vertical=True):
-#         """Draw a single preview rectangle if valid."""
-#         self.clear_preview()
-#         orientation = self.game.VERTICAL if is_vertical else self.game.HORIZONTAL
-#         if not self.game.is_valid_move(row, col, orientation):
-#             return
-#         self._draw_single_domino(row, col, vertical=is_vertical, preview=True)
-#         # We won't track a full ID list, just clear all "preview" on next call
-#         self.preview_id = True
 
 #     def clear_preview(self):
 #         """Clear any preview rectangle."""
