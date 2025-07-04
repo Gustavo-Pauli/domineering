@@ -171,6 +171,28 @@ class DomInterface(DogPlayerInterface):
 
     def _on_cell_leave(self):
         self.board.clear_preview()
+        
+    def refresh_ui(self):
+        self.board.refresh_board()
+        self.board.clear_preview()
+        
+        # Update turn label based on match_status
+        if self.game.match_status == 1:  # no match (initial state)
+            self.turn_label.config(text="Esperando partida...")
+        elif self.game.match_status == 2:  # finished match (game with winner)
+            self.turn_label.config(text=f"Ganhador: {self.game.winner.capitalize()}!")
+        elif self.game.match_status == 3:  # your turn, match in progress
+            self.turn_label.config(text="Sua Vez")
+        elif self.game.match_status == 4:  # not your turn, match in progress
+            self.turn_label.config(text="Vez do Oponente")
+        elif self.game.match_status == 5:  # match abandoned by opponent
+            self.turn_label.config(text="Oponente abandonou a partida")
+
+        # Update move counts
+        if self.game.local_player_orientation:
+            opponent_orientation = HORIZONTAL if self.game.local_player_orientation == VERTICAL else VERTICAL
+            self.player_moves_label.config(text=str(self.game.domino_counts[self.game.local_player_orientation]))
+            self.opponent_moves_label.config(text=str(self.game.domino_counts[opponent_orientation]))
 
     # END: Input Handlers
 
