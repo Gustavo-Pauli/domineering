@@ -16,14 +16,12 @@ class Game:
     """
 
     def __init__(self):
-        self._board_state: list[list[str | None]] = []  # [[None for _ in range(board_size)] for _ in range(board_size)]
+        self._board_state: list[list[str | None]] = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         self.local_player_orientation: str | None = None
         self.current_player_orientation: str = VERTICAL
         self.winner = None
-        self.domino_counts: dict[str, int] = {}
+        self.domino_counts: dict[str, int] = {VERTICAL: 0, HORIZONTAL: 0}
         self.match_status: int = 1  # see comments above for dictionary
-
-        self.restore_initial_state()
 
     # START: Assessors
 
