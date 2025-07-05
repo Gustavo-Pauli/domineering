@@ -1,37 +1,43 @@
-""" The Board class handles the VIEW of the game board """
-
 import tkinter as tk
 # from src.domineering_game import Game  # Commented out to allow testing with mock objects
 from src.settings import *
 from src.game import Game
 
 class Board:
-    def __init__(self, game_instance: Game, parent_frame: tk.Frame, click_callback=None, hover_callback=None, leave_callback=None):
-        self.parent_frame = parent_frame
+    """ The Board class handles the VIEW of the game board """
+
+    def __init__(self, game_instance: Game, window: tk.Tk, click_callback=None, hover_callback=None, leave_callback=None):
+        self.window = window
         self.game = game_instance
         self.click_callback = click_callback
         self.hover_callback = hover_callback
         self.leave_callback = leave_callback
-        self.cell_size = CELL_SIZE
 
+        self.board_frame = tk.Frame(
+            window,
+            width=BOARD_PX_SIZE,
+            height=BOARD_PX_SIZE,
+            bg="white",
+        )
+        self.board_frame.place(relx=0.5, y=64, anchor="n")
         self.canvas = tk.Canvas(
-            parent_frame,
-            width=self.game.board_size * self.cell_size,
-            height=self.game.board_size * self.cell_size,
-            bg="white"
+            self.board_frame,
+            width=BOARD_PX_SIZE,
+            height=BOARD_PX_SIZE,
+            bg="white",
+            highlightthickness=0
         )
         self.canvas.pack()
 
         self._bind_events()
-        self.refresh_board() # initial draw
 
     # START: Board utils
 
     def _canvas_coords_to_cell(self, x: int, y: int) -> tuple[int, int] | None:
         """Convert canvas x,y coords to (row,col)."""
-        row = int(y // self.cell_size)
-        col = int(x // self.cell_size)
-        if 0 <= row < self.game.board_size and 0 <= col < self.game.board_size:
+        row = int(y // CELL_SIZE)
+        col = int(x // CELL_SIZE)
+        if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
             return (row, col)
         else:
             return None
@@ -76,12 +82,12 @@ class Board:
         self._draw_dominos()
 
     def _draw_grid(self) -> None:
-        for row in range(self.game.board_size):
-            for col in range(self.game.board_size):
-                x1 = col * self.cell_size
-                y1 = row * self.cell_size
-                x2 = x1 + self.cell_size
-                y2 = y1 + self.cell_size
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                x1 = col * CELL_SIZE
+                y1 = row * CELL_SIZE
+                x2 = x1 + CELL_SIZE
+                y2 = y1 + CELL_SIZE
                 color = "white" if (row + col) % 2 == 0 else "#f0f0f0"
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, width=1, outline=GRID_COLOR)
 
@@ -89,8 +95,8 @@ class Board:
         drawn_vertical = set()
         drawn_horizontal = set()
 
-        for r in range(self.game.board_size):
-            for c in range(self.game.board_size):
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
                 state = self.game.get_cell_state(r, c)
                 if state == VERTICAL and (r, c) not in drawn_vertical:
                     self._draw_single_domino(r, c, orientation=VERTICAL)
@@ -113,12 +119,12 @@ class Board:
 
     def _draw_single_domino(self, row: int, col: int, orientation: str, preview: bool = False) -> None:
         color = VERTICAL_PLAYER_COLOR if orientation == VERTICAL else HORIZONTAL_PLAYER_COLOR
-        x1, y1 = col * self.cell_size, row * self.cell_size
+        x1, y1 = col * CELL_SIZE, row * CELL_SIZE
 
         if orientation == VERTICAL:
-            x2, y2 = x1 + self.cell_size, y1 + (2 * self.cell_size)
+            x2, y2 = x1 + CELL_SIZE, y1 + (2 * CELL_SIZE)
         else:
-            x2, y2 = x1 + (2 * self.cell_size), y1 + self.cell_size
+            x2, y2 = x1 + (2 * CELL_SIZE), y1 + CELL_SIZE
 
         tags = "preview" if preview else "domino"
         stipple = "gray50" if preview else ""
@@ -131,12 +137,12 @@ class Board:
 
 #     def _draw_single_domino(self, row: int, col: int, is_vertical: bool, preview: bool = False) -> None:
 #         color = VERTICAL_PLAYER_COLOR if is_vertical else HORIZONTAL_PLAYER_COLOR
-#         x1, y1 = col * self.cell_size, row * self.cell_size
+#         x1, y1 = col * CELL_SIZE, row * CELL_SIZE
 
 #         if is_vertical:
-#             x2, y2 = x1 + self.cell_size, y1 + (2 * self.cell_size)
+#             x2, y2 = x1 + CELL_SIZE, y1 + (2 * CELL_SIZE)
 #         else:
-#             x2, y2 = x1 + (2 * self.cell_size), y1 + self.cell_size
+#             x2, y2 = x1 + (2 * CELL_SIZE), y1 + CELL_SIZE
 
 #         tags = "preview" if preview else "domino"
 #         stipple = "gray50" if preview else ""

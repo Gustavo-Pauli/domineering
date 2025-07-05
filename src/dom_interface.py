@@ -13,17 +13,23 @@ import copy
 
 
 class DomInterface(DogPlayerInterface):
-    """Main player interface class that coordinates between game logic and UI"""
+    """
+    CONTROLLER
+    This class serves as the main player interface, coordinating between Game MODEL, Board VIEW, and Tkinter VIEW.
+    """
 
+    ## Activity Diagram: Iniciar Programa ##
     def __init__(self):
         # -- MODEL --
+        #* Instanciar Game
         self.game = Game()
 
         # -- Window --
+        #* Instanciar elementos da GUI
         self.main_window = tk.Tk()
         self.main_window.title("Domineering")
         self.main_window.iconbitmap("assets/icon.ico")
-        self.main_window.geometry("680x860")
+        self.main_window.geometry("640x864")
         self.main_window.resizable(False, False)
         self.main_window["bg"]=BG_COLOR
 
@@ -31,49 +37,48 @@ class DomInterface(DogPlayerInterface):
         self.turn_label: tk.Label
         self.player_moves_label: tk.Label
         self.opponent_moves_label: tk.Label
-        self.board_frame: tk.Frame
         self.build_ui_components()
         self.build_menu()
+        #* Instanciar Tabuleiro
         self.board = Board(
             game_instance=self.game,
-            parent_frame=self.board_frame,
+            window=self.main_window,
             click_callback=self._on_cell_click,
             hover_callback=self._on_cell_hover,
             leave_callback=self._on_cell_leave
         )
+        #* Atualizar interface
+        self.refresh_ui()
+
+        # DOG
+        #* Solicitar nome do jogador
+        self.player_name = simpledialog.askstring(title="Nome do Jogador", prompt="Digite seu nome:")
+        #* Inicializar DogActor
+        self.dog_server_interface = DogActor()
+        #* Retornar resultado do pedido de conexão
+        message = self.dog_server_interface.initialize(self.player_name, self)
+        messagebox.showinfo(message=message)
+        print("Nome:", self.player_name)
 
         self.main_window.mainloop()
+
 
     # def _on_cell_hover(self, row: int, col: int):
     #   if self.is_my_turn and self.my_player_orientation:
     #       self.board.preview_move(row, col, self.my_player_orientation)
 
-    # ========= OLD =========
-
-    #     # DOG
-    #     self.player_name = simpledialog.askstring(title="Nome do Jogador", prompt="Digite seu nome:")
-    #     self.dog_server_interface = DogActor()
-    #     message = self.dog_server_interface.initialize(self.player_name, self)
-    #     messagebox.showinfo(message=message)
-    #     print(message)
-    #     print(f"Player name: {self.player_name}")
-
-    #     self.main_window.mainloop() # iniciar o loop de eventos
-
     # START: UI
 
     def build_ui_components(self):
         """Build the main window and its components."""
-        self.board_frame = tk.Frame(self.main_window, width=560, height=560, bg="white", bd=2, relief="solid")
-        self.board_frame.place(relx=0.5, rely=0.09, anchor="n")
         gui_frame = tk.Frame(self.main_window, width=560, height=200, bg=BG_COLOR)
-        gui_frame.place(relx=0.5, rely=0.9, anchor="s")
-        self.turn_label = tk.Label(gui_frame, text="Waiting for match...", font=("Arial", 20, "bold"), fg="white", bg=BG_COLOR)
+        gui_frame.place(relx=0.5, rely=1, y=-32, anchor="s")
+        self.turn_label = tk.Label(gui_frame, text="", font=("Arial", 20, "bold"), fg="white", bg=BG_COLOR) # The text will be updated on refresh, based on the game state
         self.turn_label.pack(expand=True)
         score_frame = tk.Frame(gui_frame, bg=BG_COLOR)
-        score_frame.pack(pady=20)
-        tk.Label(score_frame, text="You", font=("Arial", 16, "bold"), fg="white", bg=BG_COLOR).grid(row=0, column=0, padx=20)
-        tk.Label(score_frame, text="Opponent", font=("Arial", 16, "bold"), fg="white", bg=BG_COLOR).grid(row=0, column=1, padx=20)
+        score_frame.pack(pady=32)
+        tk.Label(score_frame, text="Você", font=("Arial", 16, "bold"), fg="white", bg=BG_COLOR).grid(row=0, column=0, padx=32)
+        tk.Label(score_frame, text="Oponente", font=("Arial", 16, "bold"), fg="white", bg=BG_COLOR).grid(row=0, column=1, padx=32)
         self.player_moves_label = tk.Label(score_frame, text="0", font=("Arial", 16), fg="white", bg=BG_COLOR)
         self.player_moves_label.grid(row=1, column=0, padx=20, pady=5)
         self.opponent_moves_label = tk.Label(score_frame, text="0", font=("Arial", 16), fg="white", bg=BG_COLOR)
@@ -82,13 +87,48 @@ class DomInterface(DogPlayerInterface):
     def build_menu(self):
         menubar = tk.Menu(self.main_window)
         actions_menu = tk.Menu(menubar, tearoff=0)
-        actions_menu.add_command(label="Start Match", command=self.start_match)
-        menubar.add_cascade(label="Actions", menu=actions_menu)
+        actions_menu.add_command(label="Iniciar Partida", command=self.start_match)
+        menubar.add_cascade(label="Ações", menu=actions_menu)
         self.main_window.config(menu=menubar)
 
     # called by the actions menu
     def start_match(self):
         print("Starting match...")
+        #* Verificar status da partida
+        match_status = self.game.get_match_status()
+        if match_status == 1:
+            #* Perguntar se o usuário quer começar uma nova partida
+            answer = messagebox.askyesno("START", "Deseja iniciar uma nova partida?")
+            if answer:
+                #* Requisição para iniciar a partida
+                start_status = self.dog_server_interface.start_match(2)
+                code = start_status.get_code()
+                message = start_status.get_message()
+                #* Avaliar resposta
+                if code == "0" or code == "1":
+                    #* Notificar problema
+                    messagebox.showinfo(message=message)
+                else:  # code=='2'
+                    print("Code: ", code)
+                    print("Message: ", message)
+                    print("Players: ", start_status.get_players())
+                    print("Local ID: ", start_status.get_local_id())
+                    
+                    #* Atribuir vertical e horizontal para os jogadores (jogador com as peças verticais sempre inicia)
+
+                    #* Instanciar status da partida para aguardar jogada local
+                    #* Instanciar status da partida para aguardar jogada remota
+                    #* Verificar status da partida
+
+                    # OLD
+                    # players = start_status.get_players()
+                    # local_player_id = start_status.get_local_id()
+                    # self.board.start_match(players, local_player_id)
+                    # game_state = self.board.get_status()
+
+                    #* Atualizar interface
+                    self.refresh_ui()
+                    messagebox.showinfo(message=start_status.get_message())
 
     # start_status = self.dog_server_interface.start_match(2)
     # message = start_status.get_message()
@@ -178,7 +218,7 @@ class DomInterface(DogPlayerInterface):
         
         # Update turn label based on match_status
         if self.game.match_status == 1:  # no match (initial state)
-            self.turn_label.config(text="Esperando partida...")
+            self.turn_label.config(text="Esperando iniciar partida...")
         elif self.game.match_status == 2:  # finished match (game with winner)
             self.turn_label.config(text=f"Ganhador: {self.game.winner.capitalize()}!")
         elif self.game.match_status == 3:  # your turn, match in progress

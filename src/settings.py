@@ -1,5 +1,6 @@
 BOARD_SIZE = 8  # Default 8x8 grid
 CELL_SIZE = 64  # Size of each cell in pixels
+BOARD_PX_SIZE = BOARD_SIZE * CELL_SIZE  # Total size of the board in pixels
         
 # Visual settings
 GRID_COLOR = "#cccccc"

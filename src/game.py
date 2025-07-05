@@ -15,8 +15,7 @@ class Game:
     It is the single source of truth for the game state.
     """
 
-    def __init__(self, board_size=BOARD_SIZE):
-        self.board_size = board_size
+    def __init__(self):
         self._board_state: list[list[str | None]] = []  # [[None for _ in range(board_size)] for _ in range(board_size)]
         self.local_player_orientation: str = None
         self.current_player_orientation: str = None 
@@ -25,10 +24,18 @@ class Game:
         self.match_status: int = 1  # see comments above for dictionary
 
         self.clear_board()
+
+    # START: Assessors
+
+    def get_match_status(self) -> int:
+        """Returns the current match status."""
+        return self.match_status
+    
+    # END: Assessors
     
     def clear_board(self) -> None:
         """Reset the board, players, and scores to their initial states."""
-        self._board_state = [[EMPTY for _ in range(self.board_size)] for _ in range(self.board_size)]
+        self._board_state = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         self.current_player_orientation = VERTICAL
         self.winner = None
         self.domino_counts = {VERTICAL: 0, HORIZONTAL: 0}
@@ -50,8 +57,8 @@ class Game:
         Checks if the current player has any valid moves left.
         If not, the game is over.
         """
-        for r in range(self.board_size):
-            for c in range(self.board_size):
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
                 if self.is_valid_move(r, c, self.current_player_orientation):
                     return False  # Found at least one valid move
         return True  # No valid moves found for the current player
@@ -81,16 +88,16 @@ class Game:
 
     def is_valid_move(self, row: int, col: int, orientation: str) -> bool:
         """Check if the domino with specified orientation can be placed at (row, col)."""
-        if row < 0 or col < 0 or row >= self.board_size or col >= self.board_size:
+        if row < 0 or col < 0 or row >= BOARD_SIZE or col >= BOARD_SIZE:
             return False
 
         if orientation == VERTICAL:
-            if row >= self.board_size - 1:
+            if row >= BOARD_SIZE - 1:
                 return False
             return (self._board_state[row][col] == EMPTY and
                     self._board_state[row + 1][col] == EMPTY)
         else:  # HORIZONTAL
-            if col >= self.board_size - 1:
+            if col >= BOARD_SIZE - 1:
                 return False
             return (self._board_state[row][col] == EMPTY and
                     self._board_state[row][col + 1] == EMPTY)
@@ -125,24 +132,24 @@ class Game:
 
 #     def is_valid_move(self, row, col, orientation):
 #         """Check if the current orientation domino can be placed at (row, col)."""
-#         if row < 0 or col < 0 or row >= self.board_size or col >= self.board_size:
+#         if row < 0 or col < 0 or row >= BOARD_SIZE or col >= BOARD_SIZE:
 #             return False
 
 #         if orientation == self.VERTICAL:
-#             if row >= self.board_size - 1:
+#             if row >= BOARD_SIZE - 1:
 #                 return False
 #             return (self._board_state[row][col] is None and
 #                     self._board_state[row + 1][col] is None)
 #         else:
-#             if col >= self.board_size - 1:
+#             if col >= BOARD_SIZE - 1:
 #                 return False
 #             return (self._board_state[row][col] is None and
 #                     self._board_state[row][col + 1] is None)
 
 #     def clear_board(self):
 #         """Reset the board to empty."""
-#         for r in range(self.board_size):
-#             for c in range(self.board_size):
+#         for r in range(BOARD_SIZE):
+#             for c in range(BOARD_SIZE):
 #                 self._board_state[r][c] = None
 
 #     # Additional logic for checking game over, counting moves, etc. could go here.
