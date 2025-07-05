@@ -17,13 +17,13 @@ class Game:
 
     def __init__(self):
         self._board_state: list[list[str | None]] = []  # [[None for _ in range(board_size)] for _ in range(board_size)]
-        self.local_player_orientation: str = None
-        self.current_player_orientation: str = None 
+        self.local_player_orientation: str | None = None
+        self.current_player_orientation: str = VERTICAL
         self.winner = None
         self.domino_counts: dict[str, int] = {}
         self.match_status: int = 1  # see comments above for dictionary
 
-        self.clear_board()
+        self.restore_initial_state()
 
     # START: Assessors
 
@@ -33,14 +33,14 @@ class Game:
     
     # END: Assessors
     
-    def clear_board(self) -> None:
+    def restore_initial_state(self) -> None:
         """Reset the board, players, and scores to their initial states."""
         self._board_state = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-        self.current_player_orientation = VERTICAL
+        self.current_player_orientation = VERTICAL # Player with vertical dominoes starts
         self.winner = None
         self.domino_counts = {VERTICAL: 0, HORIZONTAL: 0}
 
-    def my_turn(self) -> bool:
+    def is_my_turn(self) -> bool:
         """Check if it's the current player's turn based on their orientation."""
         return self.local_player_orientation == self.current_player_orientation
 
@@ -63,7 +63,7 @@ class Game:
                     return False  # Found at least one valid move
         return True  # No valid moves found for the current player
 
-    def get_cell_state(self, row: int, col: int) -> int:
+    def get_cell_state(self, row: int, col: int) -> str | None:
         """Return the state of a cell."""
         return self._board_state[row][col]
     

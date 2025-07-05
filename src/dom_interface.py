@@ -71,6 +71,7 @@ class DomInterface(DogPlayerInterface):
 
     def build_ui_components(self):
         """Build the main window and its components."""
+        print("Building UI components...")
         gui_frame = tk.Frame(self.main_window, width=560, height=200, bg=BG_COLOR)
         gui_frame.place(relx=0.5, rely=1, y=-32, anchor="s")
         self.turn_label = tk.Label(gui_frame, text="", font=("Arial", 20, "bold"), fg="white", bg=BG_COLOR) # The text will be updated on refresh, based on the game state
@@ -85,6 +86,7 @@ class DomInterface(DogPlayerInterface):
         self.opponent_moves_label.grid(row=1, column=1, padx=20, pady=5)
 
     def build_menu(self):
+        print("Building menu...")
         menubar = tk.Menu(self.main_window)
         actions_menu = tk.Menu(menubar, tearoff=0)
         actions_menu.add_command(label="Iniciar Partida", command=self.start_match)
@@ -109,54 +111,41 @@ class DomInterface(DogPlayerInterface):
                     #* Notificar problema
                     messagebox.showinfo(message=message)
                 else:  # code=='2'
-                    print("Code: ", code)
-                    print("Message: ", message)
-                    print("Players: ", start_status.get_players())
-                    print("Local ID: ", start_status.get_local_id())
-                    
-                    #* Atribuir vertical e horizontal para os jogadores (jogador com as peças verticais sempre inicia)
-
-                    #* Instanciar status da partida para aguardar jogada local
-                    #* Instanciar status da partida para aguardar jogada remota
-                    #* Verificar status da partida
-
-                    # OLD
-                    # players = start_status.get_players()
-                    # local_player_id = start_status.get_local_id()
-                    # self.board.start_match(players, local_player_id)
-                    # game_state = self.board.get_status()
-
-                    #* Atualizar interface
-                    self.refresh_ui()
-                    messagebox.showinfo(message=start_status.get_message())
-
-    # start_status = self.dog_server_interface.start_match(2)
-    # message = start_status.get_message()
-    # messagebox.showinfo(message=message)
-    # self.start_game(start_status)
-
-    # match_status = self.board.get_match_status()
-
-
-    # match_status = self.board.get_match_status()
-    # if match_status == 1:
-    #     answer = messagebox.askyesno("START", "Deseja iniciar uma nova partida?")
-    #     if answer:
-    #         start_status = self.dog_server_interface.start_match(2)
-    #         code = start_status.get_code()
-    #         message = start_status.get_message()
-    #         if code == "0" or code == "1":
-    #             messagebox.showinfo(message=message)
-    #         else:  #    (code=='2')
-    #             players = start_status.get_players()
-    #             local_player_id = start_status.get_local_id()
-    #             self.board.start_match(players, local_player_id)
-    #             game_state = self.board.get_status()
-    #             self.update_gui(game_state)
-    #             messagebox.showinfo(message=start_status.get_message())
-
+                    self._setup_match(start_status)
 
     # END: UI
+
+    # START: DOG Interface
+
+    def receive_start(self, start_status):
+        """
+        Handles the start of a match, received from the DOG server.
+        """
+        #* Restaurar estado inicial
+        self.game.restore_initial_state()
+        self._setup_match(start_status)
+
+    def _setup_match(self, start_status):
+        """
+        Sets up a match with the given start status.
+        Common functionality between start_match and receive_start.
+        """
+        #* Atribuir vertical e horizontal para os jogadores (jogador com as peças verticais sempre inicia)
+        player1, _ = start_status.get_players() # [name, id, number] (number 1=vertical, 2=horizontal)
+        if player1[2] == 1:
+            #* Instanciar status da partida para aguardar jogada local
+            self.game.local_player_orientation = VERTICAL
+            self.game.match_status = 3
+        else:
+            #* Instanciar status da partida para aguardar jogada remota
+            self.game.local_player_orientation = HORIZONTAL
+            self.game.match_status = 4
+        #* Atualizar interface
+        self.refresh_ui()
+        #* Notificar sucesso
+        messagebox.showinfo(message=start_status.get_message())
+
+    # END: DOG Interface   
 
     # START: Input Handlers
 
@@ -187,6 +176,7 @@ class DomInterface(DogPlayerInterface):
     #         self.turn_label.config(text="Opponent's Turn")
 
     def _on_cell_click(self, row: int, col: int):
+        print(f"Cell clicked: {row}, {col}")
         pass
 
     # def _on_cell_hover(self, row: int, col: int):
@@ -198,7 +188,7 @@ class DomInterface(DogPlayerInterface):
         if self.game.match_status != 3:
             return
         # Verify if it's the player's turn
-        if not self.game.my_turn():
+        if not self.game.is_my_turn():
             return
         # Verify if the cell is empty # ? maybe just call a method in the board for everything below?
         # Verify the orientation
@@ -213,6 +203,8 @@ class DomInterface(DogPlayerInterface):
         self.board.clear_preview()
         
     def refresh_ui(self):
+        """Refresh views and update labels based on the game state."""
+        print("Refreshing UI...")
         self.board.refresh_board()
         self.board.clear_preview()
         
@@ -300,6 +292,12 @@ class DomInterface(DogPlayerInterface):
 #     print(f"Received move: {a_move}")
 #     self.board.update_board(a_move)
 #     self.opponent_moves_label.config(text=str(int(self.opponent_moves_label.cget("text")) + 1))
+#     self.update_board()
+
+#   # DOG
+#   def receive_withdrawal_notification(self):
+#     print("Received withdrawal notification")
+#     self.board.handle_opponent_withdrawal()
 #     self.update_board()
 
 #   # DOG
