@@ -93,6 +93,30 @@ class DomInterface(DogPlayerInterface):
         menubar.add_cascade(label="Ações", menu=actions_menu)
         self.main_window.config(menu=menubar)
 
+    def refresh_ui(self):
+        """Refresh views and update labels based on the game state."""
+        print("Refreshing UI...")
+        self.board.refresh_board()
+        self.board.clear_preview()
+        
+        # Update turn label based on match_status
+        if self.game.match_status == 1:  # no match (initial state)
+            self.turn_label.config(text="Esperando iniciar partida...")
+        elif self.game.match_status == 2:  # finished match (game with winner)
+            self.turn_label.config(text=f"Ganhador: {self.game.winner.capitalize()}!")
+        elif self.game.match_status == 3:  # your turn, match in progress
+            self.turn_label.config(text="Sua Vez")
+        elif self.game.match_status == 4:  # not your turn, match in progress
+            self.turn_label.config(text="Vez do Oponente")
+        elif self.game.match_status == 5:  # match abandoned by opponent
+            self.turn_label.config(text="Oponente abandonou a partida")
+
+        # Update move counts
+        if self.game.local_player_orientation:
+            opponent_orientation = HORIZONTAL if self.game.local_player_orientation == VERTICAL else VERTICAL
+            self.player_moves_label.config(text=str(self.game.domino_counts[self.game.local_player_orientation]))
+            self.opponent_moves_label.config(text=str(self.game.domino_counts[opponent_orientation]))
+
     # called by the actions menu
     def start_match(self):
         print("Starting match...")
@@ -132,7 +156,7 @@ class DomInterface(DogPlayerInterface):
         """
         #* Atribuir vertical e horizontal para os jogadores (jogador com as peças verticais sempre inicia)
         player1, _ = start_status.get_players() # [name, id, number] (number 1=vertical, 2=horizontal)
-        if player1[2] == 1:
+        if player1[2] == "1":
             #* Instanciar status da partida para aguardar jogada local
             self.game.local_player_orientation = VERTICAL
             self.game.match_status = 3
@@ -201,30 +225,6 @@ class DomInterface(DogPlayerInterface):
 
     def _on_cell_leave(self):
         self.board.clear_preview()
-        
-    def refresh_ui(self):
-        """Refresh views and update labels based on the game state."""
-        print("Refreshing UI...")
-        self.board.refresh_board()
-        self.board.clear_preview()
-        
-        # Update turn label based on match_status
-        if self.game.match_status == 1:  # no match (initial state)
-            self.turn_label.config(text="Esperando iniciar partida...")
-        elif self.game.match_status == 2:  # finished match (game with winner)
-            self.turn_label.config(text=f"Ganhador: {self.game.winner.capitalize()}!")
-        elif self.game.match_status == 3:  # your turn, match in progress
-            self.turn_label.config(text="Sua Vez")
-        elif self.game.match_status == 4:  # not your turn, match in progress
-            self.turn_label.config(text="Vez do Oponente")
-        elif self.game.match_status == 5:  # match abandoned by opponent
-            self.turn_label.config(text="Oponente abandonou a partida")
-
-        # Update move counts
-        if self.game.local_player_orientation:
-            opponent_orientation = HORIZONTAL if self.game.local_player_orientation == VERTICAL else VERTICAL
-            self.player_moves_label.config(text=str(self.game.domino_counts[self.game.local_player_orientation]))
-            self.opponent_moves_label.config(text=str(self.game.domino_counts[opponent_orientation]))
 
     # END: Input Handlers
 
