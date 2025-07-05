@@ -34,11 +34,12 @@ class Game:
     # END: Assessors
     
     def restore_initial_state(self) -> None:
-        """Reset the board, players, and scores to their initial states."""
+        """Reset the game to the initial states."""
         self._board_state = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-        self.current_player_orientation = VERTICAL # Player with vertical dominoes starts
+        self.local_player_orientation = None
         self.winner = None
         self.domino_counts = {VERTICAL: 0, HORIZONTAL: 0}
+        self.match_status = 1
 
     def is_my_turn(self) -> bool:
         """Check if it's the current player's turn based on their orientation."""
