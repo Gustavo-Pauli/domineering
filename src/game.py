@@ -37,6 +37,7 @@ class Game:
         """Reset the game to the initial states."""
         self._board_state = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         self.local_player_orientation = None
+        self.current_player_orientation = VERTICAL
         self.winner = None
         self.domino_counts = {VERTICAL: 0, HORIZONTAL: 0}
         self.match_status = 1
