@@ -22,11 +22,11 @@ class DomInterface(DogPlayerInterface):
     def __init__(self):
         # -- MODEL --
         #* Instanciar Game
-        self.game = Game()
+        self.game = Game() #
 
         # -- Window --
         #* Instanciar elementos da GUI
-        self.main_window = tk.Tk()
+        self.main_window = tk.Tk() #
         self.main_window.title("Domineering")
         self.main_window.iconbitmap("assets/icon.ico")
         self.main_window.geometry("640x864")
@@ -34,7 +34,7 @@ class DomInterface(DogPlayerInterface):
         self.main_window["bg"]=BG_COLOR
 
         # -- VIEW --
-        self.turn_label: tk.Label
+        self.turn_label: tk.Label #
         self.player_moves_label: tk.Label
         self.opponent_moves_label: tk.Label
         self.build_ui_components()
@@ -61,11 +61,6 @@ class DomInterface(DogPlayerInterface):
         print("Nome:", self.player_name)
 
         self.main_window.mainloop()
-
-
-    # def _on_cell_hover(self, row: int, col: int):
-    #   if self.is_my_turn and self.my_player_orientation:
-    #       self.board.preview_move(row, col, self.my_player_orientation)
 
     # START: UI
 
@@ -325,88 +320,3 @@ class DomInterface(DogPlayerInterface):
         self.board.clear_preview()
 
     # END: Input Handlers
-
-#   def restore_initial_state(self):
-#     """Restore the initial state of the game."""
-#     print("Restaurando estado inicial...")
-#     # Add restoration logic here
-
-#   def _on_cell_click_internal(self, row, col):
-#     """Handle cell click and place using the orientation in Board.game if needed."""
-#     print(f"Cell clicked: {row}, {col}")
-#     self.board.clear_preview()
-#     # Domino placement now draws one piece automatically
-#     if self.board.game.current_orientation == self.board.game.VERTICAL:
-#         self.board.place_vertical_domino(row, col)
-#         self.board.game.toggle_orientation()
-#     else:
-#         self.board.place_horizontal_domino(row, col)
-#         self.board.game.toggle_orientation()
-
-#   def _on_cell_hover_internal(self, row, col):
-#     """Preview potential move based on current orientation in self.board.game."""
-#     # Board handles single-piece preview
-#     is_vertical = (self.board.game.current_orientation == self.board.game.VERTICAL)
-#     self.board.preview_move(row, col, is_vertical)
-
-#   def _on_cell_leave_internal(self, row, col):
-#     """Clear the move preview."""
-#     self.board.clear_preview()
-
-#   def refresh_ui(self):
-#     """Refresh all views"""
-#     self.board.refresh_board()
-#     self.player_moves_label.config(text=str(self.board.game.get_player_moves()))
-#     self.opponent_moves_label.config(text=str(self.board.game.get_opponent_moves()))
-
-#   def start_match(self):
-#     """Start a new match"""
-#     print("Starting match...")
-#     start_status = self.dog_server_interface.start_match(2)
-#     message = start_status.get_message()
-#     messagebox.showinfo(message=message)
-#     self.start_game(start_status)
-
-#   def start_game(self, start_status):
-#     """Start a new game"""
-#     print("Starting game...")
-#     self.board.initialize()
-#     self.player_moves_label.config(text="0")
-#     self.opponent_moves_label.config(text="0")
-
-#   # DOG
-#   def receive_start(self, start_status):
-#     message = start_status.get_message()
-#     code = start_status.get_code()
-#     if code == 2:
-#         self.start_game(start_status)
-#         messagebox.showinfo(message=message)
-#     else:
-#         messagebox.showinfo(message=message)
-#         print(f"Start status: {code}")
-
-#   # DOG
-#   def receive_move(self, a_move):
-#     print(f"Received move: {a_move}")
-#     self.board.update_board(a_move)
-#     self.opponent_moves_label.config(text=str(int(self.opponent_moves_label.cget("text")) + 1))
-#     self.update_board()
-
-#   # DOG
-#   def receive_withdrawal_notification(self):
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#     self.update_board()
-
-#   # DOG
-#   def receive_withdrawal_notification(self):
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#   # DOG
-#   def receive_withdrawal_notification(self):
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
