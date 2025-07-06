@@ -12,3 +12,5 @@ __pycache__/
 
 # local folder for saving tests, etc.
 local/
+
+tests/
