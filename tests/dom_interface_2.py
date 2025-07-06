@@ -90,7 +90,6 @@ class DomInterface(DogPlayerInterface):
         menubar = tk.Menu(self.main_window)
         actions_menu = tk.Menu(menubar, tearoff=0)
         actions_menu.add_command(label="Iniciar Partida", command=self.start_match)
-        actions_menu.add_command(label="Restaurar Estado Inicial", command=self.restore_initial_state)
         menubar.add_cascade(label="Ações", menu=actions_menu)
         self.main_window.config(menu=menubar)
 
@@ -104,10 +103,7 @@ class DomInterface(DogPlayerInterface):
         if self.game.match_status == 1:  # no match (initial state)
             self.turn_label.config(text="Esperando iniciar partida...")
         elif self.game.match_status == 2:  # finished match (game with winner)
-            if self.game.winner == self.game.local_player_orientation:
-                self.turn_label.config(text="Você ganhou!")
-            else:
-                self.turn_label.config(text="Você perdeu!")
+            self.turn_label.config(text=f"Ganhador: {self.game.winner.capitalize()}!")
         elif self.game.match_status == 3:  # your turn, match in progress
             self.turn_label.config(text="Sua Vez")
         elif self.game.match_status == 4:  # not your turn, match in progress
@@ -121,10 +117,8 @@ class DomInterface(DogPlayerInterface):
             self.player_moves_label.config(text=str(self.game.domino_counts[self.game.local_player_orientation]))
             self.opponent_moves_label.config(text=str(self.game.domino_counts[opponent_orientation]))
 
+    # called by the actions menu
     def start_match(self):
-        """
-        Starts a new match. Called from the actions menu.
-        """
         print("Starting match...")
         #* Verificar status da partida
         match_status = self.game.get_match_status()
@@ -143,20 +137,6 @@ class DomInterface(DogPlayerInterface):
                 else:  # code=='2'
                     self._setup_match(start_status)
 
-    def restore_initial_state(self):
-        """
-        Restores the initial state of the game. Called from the actions menu.
-        #* Ref: Restaurar estado inicial
-        """
-        print("Restoring initial state...")
-        #* Verificar status da partida
-        match_status = self.game.get_match_status()
-        if match_status in [3, 4]:
-            return
-        self.game.restore_initial_state()
-        #* Atualizar interface
-        self.refresh_ui()
-
     # END: UI
 
     # START: DOG Interface
@@ -172,49 +152,34 @@ class DomInterface(DogPlayerInterface):
     def receive_move(self, move: Dict):
         """
         Handles a move received from the DOG server.
+        Implements Diagram 2: Receive Move.
         """
+        #* Início
         print(f"Received move: {move}")
-        #* Identificar posição da jogada recebida
+
+        #* Ação: Identificar posição da jogada recebida
         row = move['row']
         col = move['col']
         orientation = move['orientation']
         received_status = move['match_status']
 
-        #* Efetuar colocação de peça (ver diagrama)
+        #* Ação: Efetuar colocação de peça (Sub-atividade do Diagrama 3)
         self.game.place_domino(row, col, orientation)
 
-        #* Avaliar estado do jogo
+        #* Ação: Avaliar estado do jogo
         if received_status == 'finished':
             # Oponente venceu
             self.game.winner = orientation
             self.game.match_status = 2
-            if self.game.winner == self.game.local_player_orientation:
-                messagebox.showinfo("Fim de Jogo", "Você ganhou!")
-            else:
-                messagebox.showinfo("Fim de Jogo", "Você perdeu!")
+            messagebox.showinfo("Fim de Jogo", f"O jogador com as peças '{self.game.winner.capitalize()}' venceu!")
         else: # received_status == 'next'
             # Jogo continua, nossa vez
             self.game.switch_player()
             self.game.match_status = 3
 
-        #* Atualizar interface
+        #* Ação: Atualizar interface
         self.refresh_ui()
-
-    
-    def receive_withdrawal_notification(self):
-        """
-        Handles the opponent's withdrawal from the match.
-        #* Ref: Receber notificação de abandono
-        """
-        print("Received withdrawal notification.")
-        #* Definir estado do jogo como "abandonado pelo oponente"
-        self.game.match_status = 5
-
-        #* Atualizar interface
-        self.refresh_ui()
-        
-        #* Notificar usuário
-        messagebox.showinfo("Partida Encerrada", "O oponente abandonou a partida. Você venceu!")
+        #* Fim.
 
     def _setup_match(self, start_status):
         """
@@ -222,15 +187,20 @@ class DomInterface(DogPlayerInterface):
         Common functionality between start_match and receive_start.
         """
         #* Atribuir vertical e horizontal para os jogadores (jogador com as peças verticais sempre inicia)
-        player1, _ = start_status.get_players() # [name, id, number] (number 1=vertical, 2=horizontal)
-        if player1[2] == "1":
+        players = start_status.get_players()
+        # O DOG server retorna uma lista de jogadores. O primeiro jogador na lista é sempre o '1' (Vertical).
+        # Vamos encontrar qual jogador corresponde ao nosso `player_name`.
+        local_player_info = next((p for p in players if p[0] == self.player_name), None)
+
+        if local_player_info[2] == '1': # Nosso número de jogador é '1'
             #* Instanciar status da partida para aguardar jogada local
             self.game.local_player_orientation = VERTICAL
-            self.game.match_status = 3
-        else:
+            self.game.match_status = 3 # É a nossa vez, porque Vertical sempre começa
+        else: # Nosso número de jogador é '2'
             #* Instanciar status da partida para aguardar jogada remota
             self.game.local_player_orientation = HORIZONTAL
-            self.game.match_status = 4
+            self.game.match_status = 4 # Não é a nossa vez
+            
         #* Atualizar interface
         self.refresh_ui()
         #* Notificar sucesso
@@ -241,53 +211,69 @@ class DomInterface(DogPlayerInterface):
     # START: Input Handlers
 
     def _on_cell_click(self, row: int, col: int):
-        print(f"Cell clicked: {row}, {col}")
-        #* Verificar status da partida
+        #* Início (Diagrama 1: Posicionar peça)
+        
+        #* Ação: Verificar status da partida
         match_status = self.game.get_match_status()
-        if match_status in [3, 4]:
-            #* Verificar turno
-            if self.game.is_my_turn():
-                #* Efetuar colocação de peça (ver diagrama)
-                #    A validação e colocação são tratadas pelo método `place_domino` do Game.
-                orientation = self.game.get_local_player_orientation()
-                is_valid_placement = self.game.place_domino(row, col, orientation)
 
-                
-                if is_valid_placement:
-                    #* Verificar encerramento de partida (ver diagrama)
-                    # _is_game_over é chamado dentro de switch_player para verificar se a partida terminou (o próximo jogador não tem movimentos).
-                    self.game.switch_player()
-                    move_dict = {'row': row, 'col': col, 'orientation': orientation}
-
-                    if self.game.winner:
-                        self.game.match_status = 2  # Estado de partida finalizada
-                        #* Enviar jogada e notificar jogador vencedor
-                        move_dict["match_status"] = "finished"
-                        self.dog_server_interface.send_move(move_dict)
-                        self.refresh_ui()
-                        if self.game.winner == self.game.local_player_orientation:
-                            messagebox.showinfo("Fim de Jogo", "Você ganhou!")
-                        else:
-                            messagebox.showinfo("Fim de Jogo", "Você perdeu!")
-                    else:
-                        print("Continuando partida... movimento: ", move_dict)
-                        self.game.match_status = 4  # Estado de "aguardando jogada do oponente"
-                        #* Enviar jogada e trocar turno
-                        move_dict["match_status"] = "next"
-                        self.dog_server_interface.send_move(move_dict)
-
-                    #* Atualizar interface
-                    self.refresh_ui()
-                else:
-                    #* Notificar jogada inválida
-                    messagebox.showerror("Jogada Inválida", "Você não pode posicionar uma peça neste local.")
-                    return
-            else:
-                return
-        else:
-            #* Notificar que não há partida em andamento
+        #* Decisão: A partida está em andamento?
+        if match_status not in [3, 4]:
+            #* Se [NOT partida]
+            #* Ação: Notificar que não há partida em andamento
             messagebox.showwarning("Partida não iniciada", "Não há nenhuma partida em andamento. Inicie uma no menu 'Ações'.")
+            #* Fim.
             return
+
+        #* Se [partida]
+        #* Ação: Verificar turno
+        #* Decisão: É o turno do jogador local?
+        if not self.game.is_my_turn():
+            #* Se [else] (não é o turno local)
+            #* Fim.
+            return
+        
+        #* Se [turno_local]
+        #* Ação: Efetuar colocação de peça (Sub-atividade do Diagrama 3)
+        #    A validação e colocação são tratadas pelo método `place_domino` do Game.
+        orientation = self.game.get_local_player_orientation()
+        is_valid_placement = self.game.place_domino(row, col, orientation)
+
+        #* Decisão: A colocação da peça foi válida?
+        if not is_valid_placement:
+            #* Se [NOT casas_validas]
+            #* Ação: Notificar jogada inválida
+            messagebox.showerror("Jogada Inválida", "Você não pode posicionar uma peça neste local.")
+            #* Fim.
+            return
+
+        #* Se [casas_validas]
+        #* Ação: Atualizar interface (desenha a peça que acabamos de colocar)
+        self.refresh_ui()
+
+        #* Ação: Verificar encerramento de partida (Sub-atividade do Diagrama 5)
+        #    A lógica é encapsulada em `switch_player`, que define um vencedor se o próximo jogador não tiver movimentos.
+        self.game.switch_player()
+
+        move_dict = {'row': row, 'col': col, 'orientation': orientation}
+
+        #* Decisão: A partida terminou?
+        if self.game.winner:
+            #* Se [encerrada]
+            self.game.match_status = 2  # Estado de partida finalizada
+            #* Ação: Enviar jogada e notificar jogador vencedor
+            move_dict["match_status"] = "finished"
+            self.dog_server_interface.send_move(move_dict)
+            self.refresh_ui() # Atualiza a UI para mostrar a mensagem de vencedor
+            messagebox.showinfo("Fim de Jogo", f"O jogador com as peças '{self.game.winner.capitalize()}' venceu!")
+            #* Fim.
+        else:
+            #* Se [NOT encerrada]
+            self.game.match_status = 4  # Estado de "aguardando jogada do oponente"
+            #* Ação: Enviar jogada e trocar turno
+            move_dict["match_status"] = "next"
+            self.dog_server_interface.send_move(move_dict)
+            self.refresh_ui() # Atualiza a UI para "Vez do Oponente"
+            #* Fim.
 
     def _on_cell_hover(self, row: int, col: int):
         #* Verificar status da partida
@@ -320,88 +306,3 @@ class DomInterface(DogPlayerInterface):
         self.board.clear_preview()
 
     # END: Input Handlers
-
-#   def restore_initial_state(self):
-#     """Restore the initial state of the game."""
-#     print("Restaurando estado inicial...")
-#     # Add restoration logic here
-
-#   def _on_cell_click_internal(self, row, col):
-#     """Handle cell click and place using the orientation in Board.game if needed."""
-#     print(f"Cell clicked: {row}, {col}")
-#     self.board.clear_preview()
-#     # Domino placement now draws one piece automatically
-#     if self.board.game.current_orientation == self.board.game.VERTICAL:
-#         self.board.place_vertical_domino(row, col)
-#         self.board.game.toggle_orientation()
-#     else:
-#         self.board.place_horizontal_domino(row, col)
-#         self.board.game.toggle_orientation()
-
-#   def _on_cell_hover_internal(self, row, col):
-#     """Preview potential move based on current orientation in self.board.game."""
-#     # Board handles single-piece preview
-#     is_vertical = (self.board.game.current_orientation == self.board.game.VERTICAL)
-#     self.board.preview_move(row, col, is_vertical)
-
-#   def _on_cell_leave_internal(self, row, col):
-#     """Clear the move preview."""
-#     self.board.clear_preview()
-
-#   def refresh_ui(self):
-#     """Refresh all views"""
-#     self.board.refresh_board()
-#     self.player_moves_label.config(text=str(self.board.game.get_player_moves()))
-#     self.opponent_moves_label.config(text=str(self.board.game.get_opponent_moves()))
-
-#   def start_match(self):
-#     """Start a new match"""
-#     print("Starting match...")
-#     start_status = self.dog_server_interface.start_match(2)
-#     message = start_status.get_message()
-#     messagebox.showinfo(message=message)
-#     self.start_game(start_status)
-
-#   def start_game(self, start_status):
-#     """Start a new game"""
-#     print("Starting game...")
-#     self.board.initialize()
-#     self.player_moves_label.config(text="0")
-#     self.opponent_moves_label.config(text="0")
-
-#   # DOG
-#   def receive_start(self, start_status):
-#     message = start_status.get_message()
-#     code = start_status.get_code()
-#     if code == 2:
-#         self.start_game(start_status)
-#         messagebox.showinfo(message=message)
-#     else:
-#         messagebox.showinfo(message=message)
-#         print(f"Start status: {code}")
-
-#   # DOG
-#   def receive_move(self, a_move):
-#     print(f"Received move: {a_move}")
-#     self.board.update_board(a_move)
-#     self.opponent_moves_label.config(text=str(int(self.opponent_moves_label.cget("text")) + 1))
-#     self.update_board()
-
-#   # DOG
-#   def receive_withdrawal_notification(self):
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#     self.update_board()
-
-#   # DOG
-#   def receive_withdrawal_notification(self):
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#   # DOG
-#   def receive_withdrawal_notification(self):
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()
-#     print("Received withdrawal notification")
-#     self.board.handle_opponent_withdrawal()

@@ -55,21 +55,20 @@ class Board:
     def _handle_click(self, event: tk.Event) -> None:
         """ Calls the click callback for handling cell clicks. """
         coords = self._canvas_coords_to_cell(event.x, event.y)
-        if coords is not None and self.click_callback:
+        if coords is not None:
             row, col = coords
             self.click_callback(row, col)
 
     def _handle_motion(self, event: tk.Event) -> None:
         """ Calls the hover callback for handling mouse movement over cells. """
         coords = self._canvas_coords_to_cell(event.x, event.y)
-        if coords is not None and self.hover_callback:
+        if coords is not None:
             row, col = coords
             self.hover_callback(row, col)
 
     def _handle_leave(self, event: tk.Event) -> None:
         """ Calls the leave callback when mouse leaves the canvas area. """
-        if self.leave_callback:
-            self.leave_callback() # TODO: check if this is needed like this
+        self.leave_callback()
 
     # END: Input handling
 
@@ -109,7 +108,7 @@ class Board:
 
     def preview_move(self, row: int, col: int, orientation: str) -> None:
         """Draws a semi-transparent preview of a move."""
-        # self.clear_preview()  # TODO: removed for now, verify if needed
+        self.clear_preview()
         if self.game.is_valid_move(row, col, orientation):
             self._draw_single_domino(row, col, orientation, preview=True)
 

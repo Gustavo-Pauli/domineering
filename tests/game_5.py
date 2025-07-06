@@ -23,6 +23,8 @@ class Game:
         self.domino_counts: dict[str, int] = {VERTICAL: 0, HORIZONTAL: 0}
         self.match_status: int = 1  # see comments above for dictionary
 
+    # START: Assessors
+
     def get_match_status(self) -> int:
         """Returns the current match status."""
         return self.match_status
@@ -31,31 +33,53 @@ class Game:
         """Returns the orientation of the local player."""
         return self.local_player_orientation
     
-    def is_my_turn(self) -> bool:
-        """Check if it's the current player's turn based on their orientation."""
-        return self.local_player_orientation == self.current_player_orientation
+    # END: Assessors
     
     def restore_initial_state(self) -> None:
-        """
-        Reset the game to the initial states.
-        """
-        #* Esvaziar tabuleiro
+        """Reset the game to the initial states."""
         self._board_state = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-        #* Reiniciar jogadores
         self.local_player_orientation = None
         self.current_player_orientation = VERTICAL
-        #* Definir jogo para o estado inicial
         self.winner = None
         self.domino_counts = {VERTICAL: 0, HORIZONTAL: 0}
         self.match_status = 1
 
+    def is_my_turn(self) -> bool:
+        """Check if it's the current player's turn based on their orientation."""
+        return self.local_player_orientation == self.current_player_orientation
+
     def switch_player(self) -> None:
         """Toggle the current player and check for a game-over condition."""
         self.current_player_orientation = HORIZONTAL if self.current_player_orientation == VERTICAL else VERTICAL
-        if self._is_game_over():
+        if self.is_game_over():
             # The player who was supposed to move but couldn't has lost.
             # So the other player (the one who just moved) is the winner.
             self.winner = HORIZONTAL if self.current_player_orientation == VERTICAL else VERTICAL
+
+    def is_game_over(self) -> bool:
+        """
+        Checks if the current player has any valid moves left.
+        If not, the game is over.
+        #* Ref: Verificar encerramento da partida
+        """
+        #* Criar lista de casas disponiveis
+        #* Verificar se a próxima casa do tabuleiro está vazia
+        #* Adicionar casa na lista
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
+                #* Verificar tipo de peça
+                #* Decisão: Qual o tipo da peça? (A lógica está dentro de `is_valid_move`)
+                #   - Se a jogada for válida (encontrou uma casa disponível e adjacente),
+                #   - `is_valid_move` retorna True.
+                if self.is_valid_move(r, c, self.current_player_orientation):
+                    # Uma jogada válida foi encontrada.
+                    #* Ação: Retornar partida em andamento
+                    return False
+        
+        #* Decisão: A lista de casas vazias terminou?
+        # Nenhuma jogada válida foi encontrada em todo o tabuleiro.
+        #* Ação: Retornar partida encerrada
+        return True
 
     def get_cell_state(self, row: int, col: int) -> str | None:
         """Return the state of a cell."""
@@ -66,9 +90,12 @@ class Game:
         Attempt to place a domino with the specified orientation.
         Returns True if successful, False if invalid move.
         """
+        # A sub-atividade "Efetuar colocação de peça" é chamada aqui.
+        # A validação acontece primeiro.
         if not self.is_valid_move(row, col, orientation):
             return False
 
+        #* Ação (após `Retornar jogada válida`): Colocar peça
         if orientation == VERTICAL:
             self._board_state[row][col] = VERTICAL
             self._board_state[row + 1][col] = VERTICAL
@@ -83,86 +110,33 @@ class Game:
     def is_valid_move(self, row: int, col: int, orientation: str) -> bool:
         """
         Check if the domino with specified orientation can be placed at (row, col).
+        Implements Diagram 3: Execute Piece Placement.
         """
-        #* Verificar se casa clicada está desocupada
+        # Implicitamente verifica se a jogada está dentro do tabuleiro
+        if row < 0 or col < 0 or row >= BOARD_SIZE or col >= BOARD_SIZE:
+            return False
+
+        #* Ação: Verificar se casa clicada está desocupada
+        #* Decisão: A casa está ocupada?
         if self._board_state[row][col] != EMPTY:
             return False
 
-        #* Verificar tipo de peça
+        #* Ação: Verificar tipo de peça
+        #* Decisão: Qual o tipo da peça?
         if orientation == VERTICAL:
-            #* Avaliar se a posição abaixo existe no tabuleiro
+            #* Ação: Avaliar se a posição abaixo existe no tabuleiro
             if row >= BOARD_SIZE - 1:
                 return False
-            #* Avaliar se posição abaixo está ocupada
+            #* Ação: Avaliar se posição abaixo está ocupada
+            #* Decisão: Está ocupada?
             is_valid = self._board_state[row + 1][col] == EMPTY
             return is_valid
         else:  # HORIZONTAL
-            #* Avaliar se a posição a direita existe no tabuleiro
+            #* Ação: Avaliar se a posição a direita existe no tabuleiro
             if col >= BOARD_SIZE - 1:
                 return False
-            #* Avaliar se posição a direita está ocupada
+            #* Ação: Avaliar se posição a direita está ocupada
+            #* Decisão: Está ocupada?
             is_valid = self._board_state[row][col + 1] == EMPTY
             return is_valid
-        
-    def _is_game_over(self) -> bool:
-        """
-        Checks if the current player has any valid moves left.
-        If not, the game is over.
-        """
-        for r in range(BOARD_SIZE):
-            for c in range(BOARD_SIZE):
-                if self.is_valid_move(r, c, self.current_player_orientation):
-                    return False  # Found at least one valid move
-        return True  # No valid moves found for the current player
-
-#     def toggle_orientation(self):
-#         """Switch between vertical/horizontal placement."""
-#         if self.current_orientation == self.VERTICAL:
-#             self.current_orientation = self.HORIZONTAL
-#         else:
-#             self.current_orientation = self.VERTICAL
-
-#     def get_cell_state(self, row, col):
-#         """Return the state of a cell."""
-#         return self._board_state[row][col]
-
-#     def place_domino(self, row, col):
-#         """
-#         Attempt to place a domino with the current orientation.
-#         Returns True if successful, False if invalid move.
-#         """
-#         if not self.is_valid_move(row, col, self.current_orientation):
-#             return False
-
-#         if self.current_orientation == self.VERTICAL:
-#             self._board_state[row][col] = self.VERTICAL
-#             self._board_state[row + 1][col] = self.VERTICAL
-#         else:
-#             self._board_state[row][col] = self.HORIZONTAL
-#             self._board_state[row][col + 1] = self.HORIZONTAL
-
-#         return True
-
-#     def is_valid_move(self, row, col, orientation):
-#         """Check if the current orientation domino can be placed at (row, col)."""
-#         if row < 0 or col < 0 or row >= BOARD_SIZE or col >= BOARD_SIZE:
-#             return False
-
-#         if orientation == self.VERTICAL:
-#             if row >= BOARD_SIZE - 1:
-#                 return False
-#             return (self._board_state[row][col] is None and
-#                     self._board_state[row + 1][col] is None)
-#         else:
-#             if col >= BOARD_SIZE - 1:
-#                 return False
-#             return (self._board_state[row][col] is None and
-#                     self._board_state[row][col + 1] is None)
-
-#     def clear_board(self):
-#         """Reset the board to empty."""
-#         for r in range(BOARD_SIZE):
-#             for c in range(BOARD_SIZE):
-#                 self._board_state[r][c] = None
-
-#     # Additional logic for checking game over, counting moves, etc. could go here.
+        #* Fim.
