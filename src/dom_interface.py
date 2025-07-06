@@ -116,7 +116,12 @@ class DomInterface(DogPlayerInterface):
             self.turn_label.config(text="Oponente abandonou a partida")
 
         # Update move counts
-        if self.game.local_player_orientation:
+        if self.game.match_status == 1:  # no match (initial state)
+            # Reset counts to 0 when in initial state
+            self.player_moves_label.config(text="0")
+            self.opponent_moves_label.config(text="0")
+        elif self.game.local_player_orientation:
+            # Update counts based on actual game state
             opponent_orientation = HORIZONTAL if self.game.local_player_orientation == VERTICAL else VERTICAL
             self.player_moves_label.config(text=str(self.game.domino_counts[self.game.local_player_orientation]))
             self.opponent_moves_label.config(text=str(self.game.domino_counts[opponent_orientation]))
