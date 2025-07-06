@@ -6,11 +6,7 @@ from src.game import Game
 from dog.dog_interface import DogPlayerInterface
 from dog.dog_actor import DogActor
 from typing import Dict, Callable
-import queue
 from functools import partial
-import copy
-
-
 
 class DomInterface(DogPlayerInterface):
     """

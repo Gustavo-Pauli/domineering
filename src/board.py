@@ -1,5 +1,4 @@
 import tkinter as tk
-# from src.domineering_game import Game  # Commented out to allow testing with mock objects
 from src.settings import *
 from src.game import Game
 
