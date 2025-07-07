@@ -65,7 +65,7 @@ class Board:
             row, col = coords
             self.hover_callback(row, col)
 
-    def _handle_leave(self, event: tk.Event) -> None:
+    def _handle_leave(self) -> None:
         """ Calls the leave callback when mouse leaves the canvas area. """
         self.leave_callback()
 

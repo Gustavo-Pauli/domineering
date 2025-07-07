@@ -5,8 +5,7 @@ from src.settings import *
 from src.game import Game
 from dog.dog_interface import DogPlayerInterface
 from dog.dog_actor import DogActor
-from typing import Dict, Callable
-from functools import partial
+from typing import Dict
 
 class DomInterface(DogPlayerInterface):
     """
@@ -14,8 +13,10 @@ class DomInterface(DogPlayerInterface):
     This class serves as the main player interface, coordinating between Game MODEL, Board VIEW, and Tkinter VIEW.
     """
 
-    ## Activity Diagram: Iniciar Programa ##
     def __init__(self):
+        """
+        #* Ref: Iniciar Programa
+        """
         # -- MODEL --
         #* Instanciar Game
         self.game = Game() #
@@ -147,11 +148,11 @@ class DomInterface(DogPlayerInterface):
         print("Restoring initial state...")
         #* Verificar status da partida
         match_status = self.game.get_match_status()
-        if match_status in [3, 4]:
-            return
-        self.game.restore_initial_state()
-        #* Atualizar interface
-        self.refresh_ui()
+        if match_status not in [3, 4]:
+            self.game.restore_initial_state()
+            #* Atualizar interface
+            self.refresh_ui()
+        
 
     # END: UI
 
